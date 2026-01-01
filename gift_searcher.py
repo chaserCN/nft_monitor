@@ -129,12 +129,12 @@ class GiftSearcher:
         """Format gift information as Telegram caption."""
         caption = f"""🎁 {info['name']} #{info['number']}
 
-💰 Price: {info['price']} TON
+💰 Ціна: {info['price']} TON
 📊 Floor: {info['floor_price']} TON
 
-🎨 Model: {info['model']} ({info['model_rarity']:.1f}%)
-🔣 Symbol: {info['symbol']} ({info['symbol_rarity']:.1f}%)
-🖼️ Backdrop: {info['backdrop']} ({info['backdrop_rarity']:.1f}%)
+🎨 Модель: {info['model']} ({info['model_rarity']:.1f}%)
+🔣 Символ: {info['symbol']} ({info['symbol_rarity']:.1f}%)
+🖼️ Фон: {info['backdrop']} ({info['backdrop_rarity']:.1f}%)
 
 🔗 {info['url']}"""
         return caption
