@@ -3,6 +3,7 @@ import asyncio
 import time
 from typing import List, Tuple, Optional
 from portals_auth import PortalsAuthManager
+from ton_price import TonPriceFetcher
 
 
 class GiftSearcher:
@@ -10,6 +11,7 @@ class GiftSearcher:
 
     def __init__(self):
         self.auth_manager = PortalsAuthManager()
+        self.price_fetcher = TonPriceFetcher()
 
     async def search_gifts(
         self,
@@ -124,12 +126,15 @@ class GiftSearcher:
             'photo_url': gift.get('photo_url', ''),
         }
 
-    @staticmethod
-    def format_gift_caption(info: dict) -> str:
-        """Format gift information as Telegram caption."""
+    async def format_gift_caption(self, info: dict) -> str:
+        """Format gift information as Telegram caption with UAH price."""
+        # Get TON price in UAH
+        ton_price_uah = await self.price_fetcher.get_ton_price_uah()
+        price_str = self.price_fetcher.format_price_with_uah(info['price'], ton_price_uah)
+
         caption = f"""🎁 {info['name']} #{info['number']}
 
-💰 Ціна: {info['price']} TON
+💰 Ціна: {price_str}
 
 🎨 Модель: {info['model']} ({info['model_rarity']:.1f}%)
 🔣 Символ: {info['symbol']} ({info['symbol_rarity']:.1f}%)

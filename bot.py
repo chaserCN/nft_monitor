@@ -369,7 +369,7 @@ class NFTMonitorBot:
                     gift.get('external_collection_number') == number):
 
                     info = self.searcher.format_gift_info(gift)
-                    caption = self.searcher.format_gift_caption(info)
+                    caption = await self.searcher.format_gift_caption(info)
 
                     if info['photo_url']:
                         await update.message.reply_photo(
@@ -430,7 +430,7 @@ class NFTMonitorBot:
             # Send each gift as separate message with photo
             for gift in new_gifts:
                 info = self.searcher.format_gift_info(gift)
-                caption = self.searcher.format_gift_caption(info)
+                caption = await self.searcher.format_gift_caption(info)
 
                 if info['photo_url']:
                     await self.app.bot.send_photo(
