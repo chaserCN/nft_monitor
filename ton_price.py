@@ -49,19 +49,25 @@ class TonPriceFetcher:
 
         return self.cached_price  # Return old cached price if request failed
 
-    def format_price_with_uah(self, ton_amount: float, ton_price_uah: Optional[float]) -> str:
+    def format_price_with_uah(self, ton_amount, ton_price_uah: Optional[float]) -> str:
         """
         Format price showing both TON and UAH.
 
         Args:
-            ton_amount: Amount in TON
+            ton_amount: Amount in TON (can be string or number)
             ton_price_uah: Current TON price in UAH
 
         Returns:
             Formatted price string
         """
+        # Convert to float if it's a string
+        try:
+            ton_amount_float = float(ton_amount)
+        except (ValueError, TypeError):
+            return f"{ton_amount} TON"
+
         if ton_price_uah:
-            uah_amount = ton_amount * ton_price_uah
+            uah_amount = ton_amount_float * ton_price_uah
             return f"{ton_amount} TON (~{uah_amount:,.0f} ₴)"
         else:
             return f"{ton_amount} TON"

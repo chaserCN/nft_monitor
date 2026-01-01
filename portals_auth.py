@@ -2,6 +2,7 @@
 import os
 import logging
 import asyncio
+import base64
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -26,6 +27,26 @@ class PortalsAuthManager:
         # Telegram API credentials for automatic auth
         self.api_id = os.getenv("TELEGRAM_API_ID", "")
         self.api_hash = os.getenv("TELEGRAM_API_HASH", "")
+
+        # Decode session from base64 if provided (for Railway deployment)
+        self._decode_session_from_env()
+
+    def _decode_session_from_env(self):
+        """Decode session file from base64 environment variable."""
+        session_base64 = os.getenv("TELEGRAM_SESSION_BASE64", "")
+
+        if session_base64:
+            try:
+                # Decode base64 to binary
+                session_data = base64.b64decode(session_base64)
+
+                # Write to account.session file
+                with open("account.session", "wb") as f:
+                    f.write(session_data)
+
+                logger.info("✓ Session file decoded from TELEGRAM_SESSION_BASE64")
+            except Exception as e:
+                logger.error(f"Failed to decode session from base64: {e}")
 
     def has_auto_auth(self) -> bool:
         """Check if automatic authentication is configured."""

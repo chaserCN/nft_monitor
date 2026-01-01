@@ -40,6 +40,7 @@ class NFTMonitorBot:
         self.app.add_handler(CommandHandler("start", self.cmd_start))
         self.app.add_handler(CommandHandler("help", self.cmd_help))
         self.app.add_handler(CommandHandler("showall", self.cmd_showall))
+        self.app.add_handler(CommandHandler("show", self.cmd_show))
         self.app.add_handler(CommandHandler("list", self.cmd_list))
         self.app.add_handler(CommandHandler("add", self.cmd_add))
         self.app.add_handler(CommandHandler("delete", self.cmd_delete))
@@ -58,6 +59,8 @@ class NFTMonitorBot:
 
 📋 Основні команди:
 /showall - Показати всі доступні подарунки
+/show <подарунок> - Показати всі пропозиції по подарунку
+/show <подарунок>,<модель> - Показати пропозиції по комбінації
 /list - Показати відстежувані пари
 /add <подарунок>,<модель> - Додати пару до моніторингу
 /delete <подарунок>,<модель> - Видалити пару
@@ -89,6 +92,8 @@ class NFTMonitorBot:
 /help - Детальна допомога
 /list - Показати список відстежуваних пар
 /showall - Показати ВСІ доступні подарунки (без ліміту ціни)
+/show <подарунок> - Всі пропозиції по подарунку (всі моделі з вашого списку)
+/show <подарунок>,<модель> - Всі пропозиції по конкретній комбінації
 
 📝 КЕРУВАННЯ ПАРАМИ:
 /add Ionic Dryer,Love Burst
@@ -137,6 +142,9 @@ class NFTMonitorBot:
                 await update.message.reply_text("❌ Подарунків не знайдено")
                 return
 
+            # Get TON price for UAH conversion
+            ton_price_uah = await self.searcher.price_fetcher.get_ton_price_uah()
+
             # Sort by price
             gifts.sort(key=lambda x: float(x.get('price', 999999)))
 
@@ -157,8 +165,19 @@ class NFTMonitorBot:
                 cheapest = combo_gifts[0]
                 most_expensive = combo_gifts[-1]
 
+                # Format price range
+                cheapest_ton = float(cheapest['price'])
+                most_expensive_ton = float(most_expensive['price'])
+
+                if ton_price_uah:
+                    cheapest_uah = cheapest_ton * ton_price_uah
+                    most_expensive_uah = most_expensive_ton * ton_price_uah
+                    price_range = f"{cheapest['price']} - {most_expensive['price']} TON ({cheapest_uah:,.0f} - {most_expensive_uah:,.0f} ₴)"
+                else:
+                    price_range = f"{cheapest['price']} - {most_expensive['price']} TON"
+
                 summary += f"📦 {combo} ({len(combo_gifts)} шт.)\n"
-                summary += f"   💰 {cheapest['price']} - {most_expensive['price']} TON\n"
+                summary += f"   💰 {price_range}\n"
                 summary += f"   🔗 {cheapest['url']}\n\n"
 
             # Add top 20 cheapest
@@ -167,8 +186,114 @@ class NFTMonitorBot:
 
             for i, gift in enumerate(gifts[:20], 1):
                 info = self.searcher.format_gift_info(gift)
+                price_str = self.searcher.price_fetcher.format_price_with_uah(info['price'], ton_price_uah)
                 summary += f"{i}. {info['name']} #{info['number']}\n"
-                summary += f"   {info['price']} TON | {info['model']} | {info['symbol']} | {info['backdrop']}\n\n"
+                summary += f"   {price_str} | {info['model']} | Символ: {info['symbol']} | Фон: {info['backdrop']}\n\n"
+
+            if len(gifts) > 20:
+                summary += f"... та ще {len(gifts) - 20}"
+
+            await update.message.reply_text(summary)
+
+        except Exception as e:
+            await update.message.reply_text(f"❌ Помилка: {str(e)}")
+
+    async def cmd_show(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /show command - show all offers for specific gift or gift+model."""
+        if not context.args:
+            await update.message.reply_text(
+                "Використання:\n"
+                "/show <назва_подарунка> - всі пропозиції цього подарунка\n"
+                "/show <назва_подарунка>,<модель> - всі пропозиції комбінації\n\n"
+                "Приклади:\n"
+                "/show Ionic Dryer\n"
+                "/show Ionic Dryer,Love Burst"
+            )
+            return
+
+        try:
+            # Parse arguments
+            query = ' '.join(context.args)
+
+            if ',' in query:
+                # Gift + Model
+                parts = [p.strip() for p in query.split(',', 1)]
+                if len(parts) != 2:
+                    await update.message.reply_text("❌ Формат: /show <подарунок>,<модель>")
+                    return
+                gift_name, model = parts
+                combinations = [(gift_name, model)]
+                search_type = f"{gift_name} - {model}"
+            else:
+                # Only gift name - search all models
+                gift_name = query.strip()
+                # Get all unique models from wanted combinations for this gift
+                all_combos = self.config.get_wanted_combinations()
+                models = list(set(model for g, model in all_combos if g.lower() == gift_name.lower()))
+
+                if not models:
+                    await update.message.reply_text(
+                        f"❌ Подарунок '{gift_name}' не знайдено у відстежуваних.\n\n"
+                        f"Використайте /list щоб побачити всі відстежувані пари."
+                    )
+                    return
+
+                combinations = [(gift_name, model) for model in models]
+                search_type = gift_name
+
+            # Search without price limit
+            max_price = 999999
+            gifts = await self.searcher.search_gifts(combinations, max_price)
+
+            if not gifts:
+                await update.message.reply_text(f"❌ Пропозицій не знайдено для: {search_type}")
+                return
+
+            # Get TON price for UAH conversion
+            ton_price_uah = await self.searcher.price_fetcher.get_ton_price_uah()
+
+            # Sort by price
+            gifts.sort(key=lambda x: float(x.get('price', 999999)))
+
+            # Group by gift+model combination
+            by_combo = {}
+            for gift in gifts:
+                info = self.searcher.format_gift_info(gift)
+                key = f"{info['name']} - {info['model']}"
+                by_combo.setdefault(key, []).append(info)
+
+            # Build summary
+            summary = f"✅ Знайдено {len(gifts)} пропозицій для: {search_type}\n\n"
+
+            for combo, combo_gifts in sorted(by_combo.items()):
+                combo_gifts.sort(key=lambda x: float(x['price']))
+                cheapest = combo_gifts[0]
+                most_expensive = combo_gifts[-1]
+
+                # Format price range
+                cheapest_ton = float(cheapest['price'])
+                most_expensive_ton = float(most_expensive['price'])
+
+                if ton_price_uah:
+                    cheapest_uah = cheapest_ton * ton_price_uah
+                    most_expensive_uah = most_expensive_ton * ton_price_uah
+                    price_range = f"{cheapest['price']} - {most_expensive['price']} TON ({cheapest_uah:,.0f} - {most_expensive_uah:,.0f} ₴)"
+                else:
+                    price_range = f"{cheapest['price']} - {most_expensive['price']} TON"
+
+                summary += f"📦 {combo} ({len(combo_gifts)} шт.)\n"
+                summary += f"   💰 {price_range}\n"
+                summary += f"   🔗 {cheapest['url']}\n\n"
+
+            # Add top 20 cheapest
+            summary += "\n━━━━━━━━━━━━━━━━━━━━\n"
+            summary += "💎 ТОП-20 НАЙДЕШЕВШИХ:\n\n"
+
+            for i, gift in enumerate(gifts[:20], 1):
+                info = self.searcher.format_gift_info(gift)
+                price_str = self.searcher.price_fetcher.format_price_with_uah(info['price'], ton_price_uah)
+                summary += f"{i}. {info['name']} #{info['number']}\n"
+                summary += f"   {price_str} | {info['model']} | Символ: {info['symbol']} | Фон: {info['backdrop']}\n\n"
 
             if len(gifts) > 20:
                 summary += f"... та ще {len(gifts) - 20}"
