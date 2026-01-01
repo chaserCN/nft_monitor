@@ -359,7 +359,8 @@ class NFTMonitorBot:
 
         try:
             combinations = self.config.get_wanted_combinations()
-            max_price = self.config.get_max_price()
+            # Search without price limit for /image command
+            max_price = 999999
             gifts = await self.searcher.search_gifts(combinations, max_price)
 
             # Find matching gift
