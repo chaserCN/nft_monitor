@@ -130,7 +130,6 @@ class GiftSearcher:
         caption = f"""🎁 {info['name']} #{info['number']}
 
 💰 Ціна: {info['price']} TON
-📊 Floor: {info['floor_price']} TON
 
 🎨 Модель: {info['model']} ({info['model_rarity']:.1f}%)
 🔣 Символ: {info['symbol']} ({info['symbol_rarity']:.1f}%)

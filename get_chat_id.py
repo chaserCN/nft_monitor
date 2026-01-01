@@ -35,14 +35,14 @@ def main():
     token = os.getenv('TELEGRAM_BOT_TOKEN')
 
     if not token:
-        print("❌ TELEGRAM_BOT_TOKEN not found in .env")
+        print("❌ TELEGRAM_BOT_TOKEN не знайдено в .env")
         return
 
-    print("🤖 Bot started!")
-    print("\nSteps:")
-    print("1. Add this bot to your group/channel as admin")
-    print("2. Send any message to the group")
-    print("3. The chat ID will be printed here\n")
+    print("🤖 Бот запущено!")
+    print("\nКроки:")
+    print("1. Додайте цього бота до вашої групи/каналу як адміністратора")
+    print("2. Надішліть будь-яке повідомлення в групу")
+    print("3. Chat ID буде виведено тут\n")
 
     app = Application.builder().token(token).build()
     app.add_handler(MessageHandler(filters.ALL, get_chat_id))

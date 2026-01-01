@@ -13,7 +13,7 @@ async def setup_commands():
     token = os.getenv('TELEGRAM_BOT_TOKEN')
 
     if not token:
-        print("❌ TELEGRAM_BOT_TOKEN not found in .env")
+        print("❌ TELEGRAM_BOT_TOKEN не знайдено в .env")
         return
 
     # Define commands (Ukrainian language)
@@ -38,8 +38,8 @@ async def setup_commands():
     # Set commands
     await app.bot.set_my_commands(commands)
 
-    print("✅ Commands registered successfully!")
-    print("\nRegistered commands:")
+    print("✅ Команди успішно зареєстровано!")
+    print("\nЗареєстровані команди:")
     for cmd in commands:
         print(f"  /{cmd.command} - {cmd.description}")
 

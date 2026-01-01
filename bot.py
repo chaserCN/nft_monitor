@@ -28,9 +28,9 @@ class NFTMonitorBot:
         self.channel_id = os.getenv('TELEGRAM_CHANNEL_ID')
 
         if not self.bot_token:
-            raise ValueError("TELEGRAM_BOT_TOKEN not found in .env")
+            raise ValueError("TELEGRAM_BOT_TOKEN не знайдено в .env")
         if not self.channel_id:
-            raise ValueError("TELEGRAM_CHANNEL_ID not found in .env")
+            raise ValueError("TELEGRAM_CHANNEL_ID не знайдено в .env")
 
         self.app = Application.builder().token(self.bot_token).build()
         self._register_handlers()
@@ -451,7 +451,7 @@ class NFTMonitorBot:
             self.config.mark_gifts_as_seen(new_gift_ids)
 
         except Exception as e:
-            print(f"Error in check_and_notify: {e}")
+            print(f"Помилка в check_and_notify: {e}")
             await self.app.bot.send_message(
                 chat_id=self.channel_id,
                 text=f"⚠️ Помилка під час перевірки: {str(e)}"

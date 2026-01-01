@@ -35,7 +35,7 @@ PORTALS_AUTH_DATA=ваші_дані_аутентифікації
 ```
 
 4. Railway автоматично виявить `requirements.txt` і встановить залежності
-5. Встановіть Start Command: `python3 bot.py`
+5. Railway автоматично запустить бота через `Procfile`
 
 ### 3. Отримання API credentials
 
